@@ -42,15 +42,20 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
 
-	runGetCurrentBalance(ctx, bankAdapter, "7835697001")
+	// runGetCurrentBalance(ctx, bankAdapter, "7835697001")
+	resGetExchangeRatesStream(ctx, bankAdapter, "IDR", "USD")
 }
 
-func runGetCurrentBalance(ctx context.Context, adapter *bank.BankAdapter, acct string) {
-	res, err := adapter.GetBalanceByAccountNumber(ctx, acct)
+// func runGetCurrentBalance(ctx context.Context, adapter *bank.BankAdapter, acct string) {
+// 	res, err := adapter.GetBalanceByAccountNumber(ctx, acct)
 
-	if err != nil {
-		log.Fatal().Msg("Failed to call GetCurrentBalance: " + err.Error())
-	}
+// 	if err != nil {
+// 		log.Fatal().Msg("Failed to call GetCurrentBalance: " + err.Error())
+// 	}
 
-	log.Info().Msgf("Current balance for account %s is %f", acct, res.Amount)
+// 	log.Info().Msgf("Current balance for account %s is %f", acct, res.Amount)
+// }
+
+func resGetExchangeRatesStream(ctx context.Context, adapter *bank.BankAdapter, fromCurrency string, toCurrency string) {
+	adapter.GetExchangeRatesStream(ctx, fromCurrency, toCurrency)
 }
