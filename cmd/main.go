@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	cfg "github.com/fajaramaulana/go-grpc-micro-bank-client/config"
@@ -42,12 +41,14 @@ func main() {
 	}
 
 	// context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Second)
 	defer cancel()
 
 	// runGetCurrentBalance(ctx, bankAdapter, "7835697001")
 	// resGetExchangeRatesStream(ctx, bankAdapter, "IDR", "USD")
-	resGetSummarizeTransactions(ctx, bankAdapter, "7835697001", 10)
+	// resGetSummarizeTransactions(ctx, bankAdapter, "7835697001", 10)
+
+	resSendTransferMultiple(ctx, bankAdapter, "7835697004", "7835697001", 10)
 }
 
 // func runGetCurrentBalance(ctx context.Context, adapter *bank.BankAdapter, acct string) {
@@ -64,25 +65,42 @@ func main() {
 // 	adapter.GetExchangeRatesStream(ctx, fromCurrency, toCurrency)
 // }
 
-func resGetSummarizeTransactions(ctx context.Context, adapter *bank.BankAdapter, account string, numDummyTransactions int) {
-	var trx []domain.Transaction
+// func resGetSummarizeTransactions(ctx context.Context, adapter *bank.BankAdapter, account string, numDummyTransactions int) {
+// 	var trx []domain.Transaction
 
-	for i := 1; i <= numDummyTransactions; i++ {
-		trxType := domain.TransactionTypeIn
+// 	for i := 1; i <= numDummyTransactions; i++ {
+// 		trxType := domain.TransactionTypeIn
 
-		if i%3 == 0 {
-			trxType = domain.TransactionTypeOut
+// 		if i%3 == 0 {
+// 			trxType = domain.TransactionTypeOut
+// 		}
+
+// 		t := domain.Transaction{
+// 			Amount:          float64(rand.Intn(500) + 10),
+// 			TransactionType: trxType,
+// 			Notes:           "Transaction " + strconv.Itoa(i),
+// 		}
+// 		fmt.Printf("%# v\n", t)
+
+// 		trx = append(trx, t)
+// 	}
+
+// 	adapter.GetSummarizeTransactions(ctx, account, trx)
+// }
+
+func resSendTransferMultiple(ctx context.Context, adapter *bank.BankAdapter, accountSender string, accountReciever string, numTransactions int) {
+	var reqs []domain.TransferTransaction
+
+	for i := 1; i <= numTransactions; i++ {
+		t := domain.TransferTransaction{
+			FromAccountNumber: accountSender,
+			ToAccountNumber:   accountReciever,
+			Currency:          "USD",
+			Amount:            float64(rand.Intn(50) + 10),
 		}
 
-		t := domain.Transaction{
-			Amount:          float64(rand.Intn(500) + 10),
-			TransactionType: trxType,
-			Notes:           "Transaction " + strconv.Itoa(i),
-		}
-		fmt.Printf("%# v\n", t)
-
-		trx = append(trx, t)
+		reqs = append(reqs, t)
 	}
 
-	adapter.GetSummarizeTransactions(ctx, account, trx)
+	adapter.SendTransferMultiple(ctx, reqs)
 }

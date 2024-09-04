@@ -8,6 +8,7 @@ import (
 	"github.com/fajaramaulana/go-grpc-micro-bank-client/internal/port"
 	"github.com/fajaramaulana/go-grpc-micro-bank-proto/protogen/go/bank"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )
@@ -96,4 +97,79 @@ func (a *BankAdapter) GetSummarizeTransactions(ctx context.Context, account stri
 	}
 
 	log.Info().Msgf("Transaction summary :: %v", summary)
+}
+
+func (a *BankAdapter) SendTransferMultiple(ctx context.Context, trx []domain.TransferTransaction) {
+	trxStream, err := a.bankClient.TransferMultiple(ctx)
+
+	if err != nil {
+		log.Fatal().Msgf("Error on SendTransferMultiple - a.bankClient.TransferMultiple :: %s", err.Error())
+	}
+
+	trxChannel := make(chan struct{})
+
+	// Goroutine to send requests
+	go func() {
+		for _, v := range trx {
+			req := &bank.TransferRequest{
+				AccountNumberSender:   v.FromAccountNumber,
+				AccountNumberReciever: v.ToAccountNumber,
+				Currency:              v.Currency,
+				Amount:                v.Amount,
+				Notes:                 "Transfer from ",
+			}
+
+			// Send each transfer request
+			if err := trxStream.Send(req); err != nil {
+				log.Error().Msgf("Error sending transfer request: %s", err.Error())
+				return // Exit goroutine on send error
+			}
+		}
+
+		// Close the send stream after all requests have been sent
+		trxStream.CloseSend()
+	}()
+
+	// Goroutine to receive responses
+	go func() {
+		for {
+			res, err := trxStream.Recv()
+			if err == io.EOF {
+				log.Info().Msg("EOF received, closing receive goroutine.")
+				break // Normal end of the stream
+			}
+
+			if err != nil {
+				handleTransferErrorGrpc(err)
+				break
+			} else {
+				// log.Printf("Transfer status %v on %v\n", res.Status, res.Timestamp)
+				log.Info().Msgf("Transfer status %v on %v\n", res.Status, res.Timestamp)
+			}
+		}
+
+		close(trxChannel)
+	}()
+
+	<-trxChannel // Wait until the receive goroutine signals completion
+}
+
+func handleTransferErrorGrpc(err error) {
+	st := status.Convert(err)
+
+	log.Printf("Error %v on TransferMultiple : %v", st.Code(), st.Message())
+
+	for _, detail := range st.Details() {
+		switch t := detail.(type) {
+		case *errdetails.PreconditionFailure:
+			for _, violation := range t.GetViolations() {
+				log.Info().Msgf("[VIOLATION] %v", violation)
+			}
+		case *errdetails.ErrorInfo:
+			log.Info().Msgf("Error on : %v, with reason %v\n", t.Domain, t.Reason)
+			for k, v := range t.GetMetadata() {
+				log.Info().Msgf("  %v : %v\n", k, v)
+			}
+		}
+	}
 }
