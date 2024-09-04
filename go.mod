@@ -12,6 +12,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/zerolog v1.33.0
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 	google.golang.org/grpc v1.66.0
 )
 
