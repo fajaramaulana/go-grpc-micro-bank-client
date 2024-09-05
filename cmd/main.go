@@ -10,13 +10,13 @@ import (
 
 	cfg "github.com/fajaramaulana/go-grpc-micro-bank-client/config"
 	"github.com/fajaramaulana/go-grpc-micro-bank-client/internal/adapter/resilliency"
-	domainResil "github.com/fajaramaulana/go-grpc-micro-bank-client/internal/application/domain/resilliency"
-	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/fajaramaulana/go-grpc-micro-bank-client/util"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+
+	domainResil "github.com/fajaramaulana/go-grpc-micro-bank-client/internal/application/domain/resilliency"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
@@ -27,25 +27,9 @@ func main() {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	// Adding a retry interceptor for unary calls
-	opts = append(opts,
-		grpc.WithUnaryInterceptor(
-			grpcRetry.UnaryClientInterceptor(
-				grpcRetry.WithCodes(codes.Unknown, codes.Internal, codes.Unavailable),     // Retry on specific gRPC codes
-				grpcRetry.WithBackoff(grpcRetry.BackoffExponential(500*time.Millisecond)), // Exponential backoff starting from 500ms
-				grpcRetry.WithMax(6), // Try with 6 retries
-			),
-		),
-	)
+	opts = append(opts, grpc.WithUnaryInterceptor(util.CreateRetryInterceptor()))
 	// Adding a retry interceptor for stream calls
-	opts = append(opts,
-		grpc.WithStreamInterceptor(
-			grpcRetry.StreamClientInterceptor(
-				grpcRetry.WithCodes(codes.Unknown, codes.Internal, codes.Unavailable),     // Retry on specific gRPC codes
-				grpcRetry.WithBackoff(grpcRetry.BackoffExponential(500*time.Millisecond)), // Exponential backoff starting from 500ms
-				grpcRetry.WithMax(6), // Try with 6 retries
-			),
-		),
-	)
+	opts = append(opts, grpc.WithStreamInterceptor(util.CreateStreamRetryInterceptor()))
 
 	hostPort := fmt.Sprintf("%s:%s", "localhost", configuration.Get("PORT"))
 	conn, err := grpc.NewClient(hostPort, opts...)
