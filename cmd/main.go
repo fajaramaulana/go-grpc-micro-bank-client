@@ -9,14 +9,13 @@ import (
 	"time"
 
 	cfg "github.com/fajaramaulana/go-grpc-micro-bank-client/config"
-	"github.com/fajaramaulana/go-grpc-micro-bank-client/internal/adapter/bank"
 	"github.com/fajaramaulana/go-grpc-micro-bank-client/internal/adapter/resilliency"
-	domain "github.com/fajaramaulana/go-grpc-micro-bank-client/internal/application/domain/bank"
 	domainResil "github.com/fajaramaulana/go-grpc-micro-bank-client/internal/application/domain/resilliency"
+	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/exp/rand"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -27,6 +26,27 @@ func main() {
 	configuration := cfg.New("../.env")
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Adding a retry interceptor for unary calls
+	opts = append(opts,
+		grpc.WithUnaryInterceptor(
+			grpcRetry.UnaryClientInterceptor(
+				grpcRetry.WithCodes(codes.Unknown, codes.Internal, codes.Unavailable),     // Retry on specific gRPC codes
+				grpcRetry.WithBackoff(grpcRetry.BackoffExponential(500*time.Millisecond)), // Exponential backoff starting from 500ms
+				grpcRetry.WithMax(6), // Try with 6 retries
+			),
+		),
+	)
+	// Adding a retry interceptor for stream calls
+	opts = append(opts,
+		grpc.WithStreamInterceptor(
+			grpcRetry.StreamClientInterceptor(
+				grpcRetry.WithCodes(codes.Unknown, codes.Internal, codes.Unavailable),     // Retry on specific gRPC codes
+				grpcRetry.WithBackoff(grpcRetry.BackoffExponential(500*time.Millisecond)), // Exponential backoff starting from 500ms
+				grpcRetry.WithMax(6), // Try with 6 retries
+			),
+		),
+	)
+
 	hostPort := fmt.Sprintf("%s:%s", "localhost", configuration.Get("PORT"))
 	conn, err := grpc.NewClient(hostPort, opts...)
 	if err != nil {
@@ -47,16 +67,22 @@ func main() {
 	}
 
 	// context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	// runGetCurrentBalance(ctx, bankAdapter, "7835697001")
-	// resGetExchangeRatesStream(ctx, bankAdapter, "IDR", "USD")
-	// resGetSummarizeTransactions(ctx, bankAdapter, "7835697001", 10)
+	// runGetCurrentBalance(bankAdapter, "7835697001xxxxx")
+	// runFetchExchangeRates(bankAdapter, "USD", "GBP")
+	// runSummarizeTransactions(bankAdapter, "7835697002yyyyy", 10)
+	// runTransferMultiple(bankAdapter, "7835697004", "7835697003", 200)
 
-	// resSendTransferMultiple(ctx, bankAdapter, "7835697004", "7835697001", 10)
-	// runUnaryResiliency(ctx, resilliencyAdapter, 4, 6, []uint32{domainResil.UNKNOWN, domainResil.DEADLINE_EXCEEDED})
-	runClientStreamResiliency(ctx, resilliencyAdapter, 0, 1, []uint32{domainResil.UNKNOWN, domainResil.OK}, 2)
+	// runUnaryResiliencyWithTimeout(ctx, resilliencyAdapter, 2, 8, []uint32{domainResil.OK}, 5*time.Second)
+	// runServerStreamingResiliencyWithTimeout(ctx, resilliencyAdapter, 0, 3, []uint32{domainResil.OK}, 15*time.Second)
+	// runClientStreamingResiliencyWithTimeout(ctx, resilliencyAdapter, 0, 3, []uint32{domainResil.OK}, 10, 10*time.Second)
+	// runBiDirectionalResiliencyWithTimeout(ctx, resilliencyAdapter, 0, 3, []uint32{domainResil.OK}, 10, 10*time.Second)
+	// runUnaryResiliency(ctx, resilliencyAdapter, 0, 3, []uint32{domainResil.UNKNOWN, domainResil.OK})
+	// runServerStreamingResilliency(ctx, resilliencyAdapter, 0, 3, []uint32{domainResil.UNKNOWN})
+	// runClientStreamResiliency(ctx, resilliencyAdapter, 0, 3, []uint32{domainResil.UNKNOWN}, 10)
+	runUnaryResiliency(ctx, resilliencyAdapter, 0, 3, []uint32{domainResil.UNKNOWN, domainResil.OK})
 }
 
 // func runGetCurrentBalance(ctx context.Context, adapter *bank.BankAdapter, acct string) {
@@ -96,22 +122,22 @@ func main() {
 // 	adapter.GetSummarizeTransactions(ctx, account, trx)
 // }
 
-func resSendTransferMultiple(ctx context.Context, adapter *bank.BankAdapter, accountSender string, accountReciever string, numTransactions int) {
-	var reqs []domain.TransferTransaction
+// func resSendTransferMultiple(ctx context.Context, adapter *bank.BankAdapter, accountSender string, accountReciever string, numTransactions int) {
+// 	var reqs []domain.TransferTransaction
 
-	for i := 1; i <= numTransactions; i++ {
-		t := domain.TransferTransaction{
-			FromAccountNumber: accountSender,
-			ToAccountNumber:   accountReciever,
-			Currency:          "USD",
-			Amount:            float64(rand.Intn(50) + 10),
-		}
+// 	for i := 1; i <= numTransactions; i++ {
+// 		t := domain.TransferTransaction{
+// 			FromAccountNumber: accountSender,
+// 			ToAccountNumber:   accountReciever,
+// 			Currency:          "USD",
+// 			Amount:            float64(rand.Intn(50) + 10),
+// 		}
 
-		reqs = append(reqs, t)
-	}
+// 		reqs = append(reqs, t)
+// 	}
 
-	adapter.SendTransferMultiple(ctx, reqs)
-}
+// 	adapter.SendTransferMultiple(ctx, reqs)
+// }
 
 func runUnaryResiliency(ctx context.Context, adapter *resilliency.ResilliencyAdapter, minDelaySecond int32,
 	maxDelaySecond int32, statusCodes []uint32) {
@@ -127,4 +153,9 @@ func runUnaryResiliency(ctx context.Context, adapter *resilliency.ResilliencyAda
 func runClientStreamResiliency(ctx context.Context, adapter *resilliency.ResilliencyAdapter, minDelaySecond int32,
 	maxDelaySecond int32, statusCodes []uint32, count int) {
 	adapter.ClientStreamResilliency(ctx, minDelaySecond, maxDelaySecond, statusCodes, count)
+}
+
+func runServerStreamingResilliency(ctx context.Context, adapter *resilliency.ResilliencyAdapter, minDelaySecond int32,
+	maxDelaySecond int32, statusCodes []uint32) {
+	adapter.ServerStreamResilliency(ctx, minDelaySecond, maxDelaySecond, statusCodes)
 }

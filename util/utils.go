@@ -1,9 +1,15 @@
 package util
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func ReqId(chId string) string {
@@ -57,4 +63,37 @@ func FormatRupiah(amount float64) string {
 	// Gabungkan bagian integer dan desimal dengan tanda koma
 	rupiah := "Rp " + intPart + "," + decimalPart
 	return rupiah
+}
+
+// unaryInterceptorWithLogging wraps the retry interceptor and adds logging for each retry
+func UnaryInterceptorWithLogging(retryInterceptor grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
+	return func(
+		ctx context.Context,
+		method string,
+		req interface{},
+		reply interface{},
+		cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		opts ...grpc.CallOption,
+	) error {
+		var attempt uint = 0
+
+		// Wrap the invoker with retry logic and add logging
+		return retryInterceptor(
+			ctx,
+			method,
+			req,
+			reply,
+			cc,
+			func(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
+				err := invoker(ctx, method, req, reply, cc, opts...)
+				if status.Code(err) != codes.OK {
+					attempt++
+					log.Warn().Msgf("Retrying %s, attempt #%d, error: %v", method, attempt, err)
+				}
+				return err
+			},
+			opts...,
+		)
+	}
 }

@@ -22,6 +22,7 @@ func NewResilliencyAdapter(conn *grpc.ClientConn) (*ResilliencyAdapter, error) {
 }
 
 func (a *ResilliencyAdapter) UnaryResilliency(ctx context.Context, minDelaySec int32, maxDelaySec int32, statusCodes []uint32) (*resilliency.ResilliencyResponse, error) {
+	log.Info().Msg("UnaryResilliency called")
 	req := &resilliency.ResilliencyRequest{
 		MinDelaySecond: minDelaySec,
 		MaxDelaySecond: maxDelaySec,
