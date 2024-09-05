@@ -156,8 +156,7 @@ func (a *BankAdapter) SendTransferMultiple(ctx context.Context, trx []domain.Tra
 
 func handleTransferErrorGrpc(err error) {
 	st := status.Convert(err)
-
-	log.Printf("Error %v on TransferMultiple : %v", st.Code(), st.Message())
+	log.Debug().Msgf("Error %v on TransferMultiple : %v", st.Code(), st.Message())
 
 	for _, detail := range st.Details() {
 		switch t := detail.(type) {
