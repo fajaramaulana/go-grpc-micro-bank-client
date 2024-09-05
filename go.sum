@@ -28,8 +28,8 @@ github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKoh
 github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
-github.com/fajaramaulana/go-grpc-micro-bank-proto v0.0.11 h1:GkH9ZRHZy7wYlJvV/Glc83dsCo+gi+BzP2LGaUxFkV4=
-github.com/fajaramaulana/go-grpc-micro-bank-proto v0.0.11/go.mod h1:+MILtk2qM4w1/4GfJ6N2Wenq5D0+OxK7jeAi9ftLWIg=
+github.com/fajaramaulana/go-grpc-micro-bank-proto v0.0.12 h1:xHR8Vsot/N652+5RwOdXVi0yb8PuoQUbAymMGN9P0No=
+github.com/fajaramaulana/go-grpc-micro-bank-proto v0.0.12/go.mod h1:+MILtk2qM4w1/4GfJ6N2Wenq5D0+OxK7jeAi9ftLWIg=
 github.com/fajaramaulana/go-grpc-micro-bank-server v0.0.0-20240828082118-a9c0ed1a6f57 h1:5FeMYBQGfuPX6mFApGooxrvQQJBNfO8C9rPXq3oM3HY=
 github.com/fajaramaulana/go-grpc-micro-bank-server v0.0.0-20240828082118-a9c0ed1a6f57/go.mod h1:tLbEWWI1OLbj00aHh70t7vkpHl0VVjinLF7S65tTT9A=
 github.com/go-kit/log v0.1.0/go.mod h1:zbhenjAZHb184qTLMA9ZjW7ThYL0H2mk7Q6pNt4vbaY=

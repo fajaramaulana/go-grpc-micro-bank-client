@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/chilts/sid v0.0.0-20190607042430-660e94789ec9
-	github.com/fajaramaulana/go-grpc-micro-bank-proto v0.0.11
+	github.com/fajaramaulana/go-grpc-micro-bank-proto v0.0.12
 	github.com/fajaramaulana/go-grpc-micro-bank-server v0.0.0-20240828082118-a9c0ed1a6f57
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-migrate/migrate/v4 v4.17.1
@@ -13,6 +13,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/zerolog v1.33.0
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240823204242-4ba0660f739c
 	google.golang.org/grpc v1.66.0
 )
 
@@ -43,6 +44,5 @@ require (
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/genproto v0.0.0-20240826202546-f6391c0de4c7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240823204242-4ba0660f739c // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
